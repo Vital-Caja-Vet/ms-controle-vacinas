@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ms-controle-vacinas-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${PGDATABASE:-msvacinas}
+      - POSTGRES_USER=${PGUSER:-msvacinas}
+      - POSTGRES_PASSWORD=${PGPASSWORD:-msvacinas}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-msvacinas}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  ms-controle-vacinas:
+    build: .
+    image: ms-controle-vacinas:latest
+    container_name: ms-controle-vacinas
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3003}:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - ALERT_DAYS=${ALERT_DAYS:-30}
+      - AUTH_USER=${AUTH_USER:-admin}
+      - AUTH_PASS=${AUTH_PASS:-password}
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGUSER=${PGUSER:-msvacinas}
+      - PGPASSWORD=${PGPASSWORD:-msvacinas}
+      - PGDATABASE=${PGDATABASE:-msvacinas}
+      - AUTH_VALIDATE_URL=${AUTH_VALIDATE_URL:-}
+    volumes:
+      - ./data:/app/data
+
+volumes:
+  pgdata:

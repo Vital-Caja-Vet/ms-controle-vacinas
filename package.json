@@ -1,0 +1,15 @@
+{
+  "name": "ms-controle-vacinas",
+  "version": "1.0.0",
+  "description": "Microsserviço para controle de vacinas e medicamentos (estoque, aplicações, alertas).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.12.0"
+  }
+}

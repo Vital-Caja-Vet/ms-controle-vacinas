@@ -1,0 +1,159 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ms-controle-vacinas",
+    "version": "1.0.0",
+    "description": "API REST para controle de vacinas e medicamentos."
+  },
+  "servers": [
+    { "url": "http://localhost:3003" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "batch": { "type": "string" },
+          "expirationDate": { "type": "string", "format": "date-time" },
+          "stockQuantity": { "type": "integer" },
+          "minStockThreshold": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "manufacturer", "batch", "expirationDate", "stockQuantity"]
+      },
+      "ItemCreate": {
+        "type": "object",
+        "required": ["name", "manufacturer", "batch", "expirationDate", "stockQuantity"],
+        "properties": {
+          "name": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "batch": { "type": "string" },
+          "expirationDate": { "type": "string", "format": "date-time" },
+          "stockQuantity": { "type": "integer" },
+          "minStockThreshold": { "type": "integer" }
+        }
+      },
+      "ItemUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "batch": { "type": "string" },
+          "expirationDate": { "type": "string", "format": "date-time" },
+          "stockQuantity": { "type": "integer" },
+          "minStockThreshold": { "type": "integer" }
+        }
+      },
+      "Application": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "animalId": { "type": "string" },
+          "itemId": { "type": "string" },
+          "doseQuantity": { "type": "integer" },
+          "date": { "type": "string", "format": "date-time" },
+          "userId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "animalId", "itemId", "doseQuantity", "date"]
+      },
+      "ApplicationCreate": {
+        "type": "object",
+        "required": ["animalId", "itemId", "doseQuantity"],
+        "properties": {
+          "animalId": { "type": "string" },
+          "itemId": { "type": "string" },
+          "doseQuantity": { "type": "integer", "minimum": 1 },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApplicationUpdate": {
+        "type": "object",
+        "properties": {
+          "animalId": { "type": "string" },
+          "itemId": { "type": "string" },
+          "doseQuantity": { "type": "integer", "minimum": 1 },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "stockQuantity": { "type": "integer" },
+          "minStockThreshold": { "type": "integer" },
+          "expirationDate": { "type": "string", "format": "date-time" },
+          "lowStock": { "type": "boolean" },
+          "nearExpiry": { "type": "boolean" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } },
+        "required": ["error"]
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login de desenvolvimento (gera JWT local)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "username": {"type":"string"}, "password": {"type":"string"} } }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token", "content": { "application/json": { "schema": { "type": "object", "properties": { "token": {"type": "string"} } } } } },
+          "401": { "description": "Credenciais inválidas" }
+        }
+      }
+    },
+    "/api/items": {
+      "get": {
+        "summary": "Lista itens",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Item" } } } } } }
+      },
+      "post": {
+        "summary": "Cria item",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ItemCreate" } } } },
+        "responses": { "201": { "description": "Criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } } } }
+      }
+    },
+    "/api/items/{id}": {
+      "get": { "summary": "Obtém item", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "responses": {"200": {"description":"OK","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Item"}}}}, "404": {"description":"Não encontrado"} } },
+      "put": { "summary": "Atualiza item", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "requestBody": {"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ItemUpdate"}}}}, "responses": {"200": {"description":"OK"}, "404": {"description":"Não encontrado"}} },
+      "delete": { "summary": "Remove item", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "responses": {"200": {"description":"OK"}, "404": {"description":"Não encontrado"}} }
+    },
+    "/api/items/alerts": {
+      "get": { "summary": "Lista alertas", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Alert" } } } } } } }
+    },
+    "/api/applications": {
+      "get": { "summary": "Lista aplicações", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Application" } } } } } } },
+      "post": { "summary": "Cria aplicação", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ApplicationCreate"}}}}, "responses": {"201": {"description":"Criado"}} }
+    },
+    "/api/applications/{id}": {
+      "get": { "summary": "Obtém aplicação", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "responses": {"200": {"description":"OK", "content":{"application/json":{"schema":{"$ref":"#/components/schemas/Application"}}}}, "404": {"description":"Não encontrado"}} },
+      "put": { "summary": "Atualiza aplicação", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "requestBody": {"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApplicationUpdate"}}}}, "responses": {"200": {"description":"OK"}, "404": {"description":"Não encontrado"}} },
+      "delete": { "summary": "Remove aplicação (reverte estoque)", "parameters": [{"name":"id","in":"path","required":true, "schema":{"type":"string"}}], "responses": {"200": {"description":"OK"}, "404": {"description":"Não encontrado"}} }
+    }
+  }
+}
