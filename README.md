@@ -58,7 +58,7 @@ ms-controle-vacinas/
 Execução
 --------
 - A API sobe na porta configurada em `PORT` (padrão 8003). Na primeira execução sincroniza as tabelas via Sequelize.
-- Documentação Swagger disponível em `/apidocs`.
+- Documentação Swagger disponível em `/api/v1/docs`.
 - Health check em `/api/v1/health`.
 
 Autenticação

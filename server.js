@@ -28,7 +28,7 @@ try {
 } catch (e) {
   // Mantém vazio se não existir durante o dev
 }
-app.use('/apidocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Inicialização
 const PORT = process.env.PORT || 8003;
