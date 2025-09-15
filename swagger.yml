@@ -1,0 +1,286 @@
+openapi: 3.0.3
+info:
+  title: ms-controle-vacinas
+  version: 1.0.0
+  description: API para controle de vacinas/medicamentos e aplicações em animais.
+servers:
+  - url: http://localhost:8003
+tags:
+  - name: Sistema
+  - name: Vacinas
+  - name: Aplicações
+paths:
+  /api/v1/health:
+    get:
+      tags: [Sistema]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/vacinas:
+    get:
+      tags: [Vacinas]
+      summary: Listar vacinas (público)
+      parameters:
+        - in: query
+          name: tipo
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: status_validade
+          schema: { type: string, enum: [vencidos, validade_proxima, validos] }
+        - in: query
+          name: estoque_baixo
+          schema: { type: boolean }
+        - in: query
+          name: ativo
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Lista de vacinas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessManyVacina'
+    post:
+      security:
+        - bearerAuth: []
+      tags: [Vacinas]
+      summary: Cadastrar vacina
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacinaInput'
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessOneVacina'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /api/v1/vacinas/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      tags: [Vacinas]
+      summary: Buscar vacina por ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessOneVacina'
+        '404':
+          description: Não encontrado
+    put:
+      security:
+        - bearerAuth: []
+      tags: [Vacinas]
+      summary: Atualizar campos seguros da vacina
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantidade_estoque: { type: number }
+                observacoes: { type: string }
+                valor: { type: number }
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Erro de validação
+    delete:
+      security:
+        - bearerAuth: []
+      tags: [Vacinas]
+      summary: Inativar vacina (soft delete)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+  /api/v1/vacinas/alertas/dashboard:
+    get:
+      security:
+        - bearerAuth: []
+      tags: [Vacinas]
+      summary: Dashboard de alertas
+      responses:
+        '200':
+          description: OK
+  /api/v1/aplicacoes:
+    get:
+      security:
+        - bearerAuth: []
+      tags: [Aplicações]
+      summary: Listar aplicações
+      parameters:
+        - in: query
+          name: animal_id
+          schema: { type: string }
+        - in: query
+          name: vacina_id
+          schema: { type: string }
+        - in: query
+          name: veterinario
+          schema: { type: string }
+        - in: query
+          name: data_inicio
+          schema: { type: string, format: date }
+        - in: query
+          name: data_fim
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: OK }
+    post:
+      security:
+        - bearerAuth: []
+      tags: [Aplicações]
+      summary: Registrar aplicação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AplicacaoInput'
+      responses:
+        '201': { description: Criado }
+        '400': { description: Erro de validação }
+  /api/v1/aplicacoes/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      tags: [Aplicações]
+      summary: Buscar aplicação por ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '404': { description: Não encontrado }
+  /api/v1/aplicacoes/animal/{animal_id}:
+    get:
+      security:
+        - bearerAuth: []
+      tags: [Aplicações]
+      summary: Histórico por animal
+      parameters:
+        - in: path
+          name: animal_id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Vacina:
+      type: object
+      properties:
+        id: { type: string }
+        nome: { type: string }
+        fabricante: { type: string }
+        lote: { type: string }
+        data_validade: { type: string, format: date }
+        quantidade_estoque: { type: number }
+        tipo: { type: string }
+        unidade: { type: string }
+        valor: { type: number }
+        observacoes: { type: string }
+        ativo: { type: boolean }
+    VacinaInput:
+      type: object
+      required: [nome, fabricante, lote, data_validade]
+      properties:
+        nome: { type: string }
+        fabricante: { type: string }
+        lote: { type: string }
+        data_validade: { type: string, format: date }
+        quantidade_estoque: { type: number }
+        tipo: { type: string }
+        unidade: { type: string }
+        valor: { type: number }
+        observacoes: { type: string }
+    Aplicacao:
+      type: object
+      properties:
+        id: { type: string }
+        animal_id: { type: string }
+        animal_nome: { type: string }
+        vacina_id: { type: string }
+        veterinario: { type: string }
+        quantidade: { type: number }
+        data_aplicacao: { type: string, format: date-time }
+        local: { type: string }
+        usuario_id: { type: string }
+        observacoes: { type: string }
+    AplicacaoInput:
+      type: object
+      required: [animal_id, vacina_id, veterinario, quantidade]
+      properties:
+        animal_id: { type: string }
+        vacina_id: { type: string }
+        veterinario: { type: string }
+        quantidade: { type: number }
+        data: { type: string, format: date-time }
+        local: { type: string }
+        observacoes: { type: string }
+    SuccessOneVacina:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        data:
+          $ref: '#/components/schemas/Vacina'
+        message: { type: string, example: Operação realizada com sucesso }
+    SuccessManyVacina:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Vacina' }
+        message: { type: string, example: Operação realizada com sucesso }
+    ValidationError:
+      type: object
+      properties:
+        error: { type: string, example: Descrição do erro }
+        details: { type: string, example: Detalhes específicos }
+        code: { type: string, example: VALIDATION_ERROR }
+

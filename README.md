@@ -1,66 +1,158 @@
-﻿ms-controle-vacinas (Node.js + PostgreSQL)
+ms-controle-vacinas
+===================
 
-Serviço REST para controle de vacinas e medicamentos com validação de token externa, PostgreSQL por microsserviço e alertas de estoque/validade.
+Microsserviço para controle de vacinas/medicamentos e aplicações em animais, desenvolvido em Node.js/Express e PostgreSQL (Sequelize). Segue o padrão arquitetural do serviço Python/Flask equivalente.
 
-Recursos principais:
-- Estoque: nome, fabricante, lote, validade, quantidade e limite mínimo.
-- Aplicações: registra aplicação em animal, debita/restaura estoque (transacional) e bloqueia itens vencidos.
-- Alertas: estoque baixo e validade próxima (configurável por `ALERT_DAYS`).
-- Segurança: validação do token junto ao serviço de autenticação do professor (configurável por `AUTH_VALIDATE_URL`), com fallback JWT local para desenvolvimento.
-- Documentação: OpenAPI em `/openapi.json` e visualização via `/docs`.
+Requisitos
+----------
+- Node.js 18+
+- PostgreSQL 13+
 
-## Documentação da API (OpenAPI)
-- Especificação: o arquivo `openapi.json` no repositório descreve todos os endpoints, modelos e códigos de resposta.
-- Endpoints de Docs:
-  - `GET /openapi.json`: retorna a especificação OpenAPI.
-  - `GET /docs`: redireciona para o Swagger UI usando o `openapi.json` deste serviço.
-- Teste rápido:
-  - `curl http://localhost:3003/openapi.json`
-  - Abra `http://localhost:3003/docs` no navegador para testar as rotas.
-- Autenticação nas chamadas: use o header `Authorization: Bearer <token>` nas rotas protegidas.
-- Importar no Postman/Insomnia: importe o arquivo `openapi.json` para gerar coleções de requisições automaticamente.
-- Manutenção da doc: ao alterar rotas ou modelos, atualize `openapi.json` e verifique `GET /openapi.json`.
+Instalação
+----------
+- Copie `.env.example` para `.env` e ajuste as variáveis (principalmente `DATABASE_URL`).
+- Instale dependências:
+  - `npm install`
+- Inicie em desenvolvimento:
+  - `npm run dev`
+- Inicie em produção:
+  - `npm start`
 
-Como executar (local)
-- Pré-requisitos: Node.js 18+ e PostgreSQL acessível; ou use Docker Compose.
-- Variáveis: copie `.env.example` para `.env` e ajuste (especialmente PG* e AUTH_VALIDATE_URL).
-- Instalar deps: `npm install`
-- Migrar e iniciar: `npm start` (migra automaticamente ao subir)
+Configuração (.env)
+-------------------
+```
+PORT=8003
+NODE_ENV=development
+# Ex.: postgres://usuario:senha@localhost:5432/ms_controle_vacinas
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/ms_controle_vacinas
+AUTH_SERVICE_URL=https://ad64f6d6ca53.ngrok-free.app/api/v1
+MS_PRONTUARIO_URL=http://localhost:8001
+ESTOQUE_MINIMO=5
+DIAS_ALERTA_VALIDADE=30
+```
 
-Como executar (Docker Compose)
-- Pré-requisitos: Docker + Docker Compose.
-- Ajuste variáveis (opcional): copie `.env.example` para `.env` e edite.
-- Subir: `docker compose up --build -d`
-- Serviços:
-  - API: `http://localhost:${PORT:-3003}`
-  - PostgreSQL interno (não exposto): `postgres:5432`
+Estrutura do projeto
+--------------------
+```
+ms-controle-vacinas/
+├── server.js
+├── package.json
+├── .env / .env.example
+├── config/
+│   └── database.js
+├── middleware/
+│   └── auth.js
+├── models/
+│   ├── index.js
+│   ├── Vacina.js
+│   └── Aplicacao.js
+├── routes/
+│   ├── vacinaRoutes.js
+│   └── aplicacaoRoutes.js
+├── utils/
+│   └── responses.js
+├── swagger.yml
+└── README.md
+```
 
-Rotas
-- `POST /auth/login` (dev): autentica e retorna JWT de teste. Body: `{ "username", "password" }`.
-- `GET /health` (público): status do serviço.
-- `GET /openapi.json` / `GET /docs`: documentação da API.
-- `GET /api/items` (protegido): lista itens de estoque.
-- `POST /api/items` (protegido): cria item. Body: `{ name, manufacturer, batch, expirationDate(ISO), stockQuantity, minStockThreshold }`.
-- `GET /api/items/:id` (protegido): obtém item por id.
-- `PUT /api/items/:id` (protegido): atualiza campos do item.
-- `DELETE /api/items/:id` (protegido): remove item.
-- `GET /api/items/alerts` (protegido): lista alertas de estoque baixo e validade próxima.
-- `GET /api/applications` (protegido): lista aplicações registradas.
-- `POST /api/applications` (protegido): registra aplicação. Body: `{ animalId, itemId, doseQuantity, date? }`.
-- `GET /api/applications/:id` (protegido): obtém aplicação por id.
-- `PUT /api/applications/:id` (protegido): atualiza aplicação; ajusta estoque conforme mudanças.
-- `DELETE /api/applications/:id` (protegido): remove aplicação e reverte estoque.
+Execução
+--------
+- A API sobe na porta configurada em `PORT` (padrão 8003). Na primeira execução sincroniza as tabelas via Sequelize.
+- Documentação Swagger disponível em `/apidocs`.
+- Health check em `/api/v1/health`.
 
-Configuração
-- Autenticação externa: defina `AUTH_VALIDATE_URL` (ex.: `http://<host>:<port>/api/token/validate`). O microserviço envia `Authorization: Bearer <token>` para validação.
-- PostgreSQL: use variáveis `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` (ou `DATABASE_URL`).
-- Alertas: ajuste `ALERT_DAYS`.
-- Desenvolvimento: `POST /auth/login` gera um JWT local (chave: `JWT_SECRET`).
+Autenticação
+------------
+- Todas as rotas protegidas exigem header `Authorization: Bearer {token}`.
+- O token é validado via serviço externo `${AUTH_SERVICE_URL}/profile/me/`.
+- Respostas 401 seguem o padrão `{ "error": "Token inválido", "code": "UNAUTHORIZED" }`.
 
-JWT
-- Enviar `Authorization: Bearer <token>` em todas as rotas protegidas.
+Endpoints
+---------
+- Vacinas
+  - GET `/api/v1/vacinas` (público, com filtros)
+  - GET `/api/v1/vacinas/:id` (protegido)
+  - POST `/api/v1/vacinas` (protegido)
+  - PUT `/api/v1/vacinas/:id` (protegido; apenas quantidade_estoque, observacoes, valor)
+  - DELETE `/api/v1/vacinas/:id` (protegido; soft delete `ativo=false`)
+  - GET `/api/v1/vacinas/alertas/dashboard` (protegido)
 
-Exemplos
-- Health: `curl http://localhost:3003/health`
-- Login (dev): `curl -X POST http://localhost:3003/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"password"}'`
-- Itens: `curl -H "Authorization: Bearer <token>" http://localhost:3003/api/items`
+- Aplicações
+  - GET `/api/v1/aplicacoes` (protegido; filtros por animal, vacina, período, veterinário)
+  - POST `/api/v1/aplicacoes` (protegido; registra e debita estoque atômico/validado)
+  - GET `/api/v1/aplicacoes/:id` (protegido)
+  - GET `/api/v1/aplicacoes/animal/:animal_id` (protegido)
+
+Regras de Negócio
+-----------------
+- Vacinas
+  - Lote único (índice único em `lote`).
+  - `data_validade` não pode estar no passado.
+  - `quantidade_estoque` não pode ser negativa.
+  - Atualização restrita a `quantidade_estoque`, `observacoes`, `valor`.
+  - Soft delete via `ativo=false`.
+
+- Aplicações
+  - Nunca aplicar produto vencido.
+  - Verificar estoque suficiente e debitar automaticamente.
+  - Validar existência do animal via `${MS_PRONTUARIO_URL}/api/v1/animais/{id}`; se 404 bloqueia, se falha de rede usa fallback de nome.
+  - Histórico por animal, por vacina e por período via filtros/listagem.
+
+- Alertas
+  - Estoque baixo `<= ESTOQUE_MINIMO`.
+  - Validade próxima `<= DIAS_ALERTA_VALIDADE` dias.
+  - Produtos vencidos listados e bloqueados em aplicação.
+
+Padrões de Resposta
+-------------------
+- Sucesso:
+```
+{
+  "status": "success",
+  "data": { ... },
+  "message": "Operação realizada com sucesso"
+}
+```
+
+- Erro de Validação:
+```
+{
+  "error": "Descrição do erro",
+  "details": "Detalhes específicos",
+  "code": "VALIDATION_ERROR"
+}
+```
+
+- Erro de Autenticação:
+```
+{
+  "error": "Token inválido",
+  "code": "UNAUTHORIZED"
+}
+```
+
+Testes com Postman
+------------------
+- Coleção recomendada: `ms-controle-vacinas.postman_collection.json` com cenários:
+  1. Cadastro de vacina válida
+  2. Cadastro com lote duplicado (deve falhar)
+  3. Aplicação normal (deve debitar estoque)
+  4. Aplicação sem estoque (deve falhar)
+  5. Aplicação de produto vencido (deve falhar)
+  6. Verificação de alertas (estoque baixo, validade próxima)
+  7. Histórico por animal
+
+Integrações
+-----------
+- Autenticação: `${AUTH_SERVICE_URL}/profile/me/` via Bearer token.
+- ms-prontuario-animal: `${MS_PRONTUARIO_URL}/api/v1/animais/{id}` para validar existência e buscar nome.
+
+Logs
+----
+- Requisições são logadas via `morgan` no formato `dev`.
+- Erros não tratados são logados no stderr com metadados básicos.
+
+Containerização
+---------------
+- Projeto preparado para containerização (Dockerfile/compose podem ser adicionados conforme necessidade).
+
