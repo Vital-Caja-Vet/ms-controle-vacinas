@@ -1,11 +1,10 @@
 const axios = require('axios');
 const { sendUnauthorized } = require('../utils/responses');
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'https://ad64f6d6ca53.ngrok-free.app/api/v1';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 
 async function authRequired(req, res, next) {
   try {
-    // Dev bypass opcional
     const bypass = String(process.env.AUTH_BYPASS || '').toLowerCase() === 'true';
     if (bypass) {
       req.user = { id: 'dev-user', email: 'dev@example.com', roles: ['DEV_BYPASS'] };
@@ -35,15 +34,12 @@ async function authRequired(req, res, next) {
           headers: attempt.header,
           timeout: 8000
         });
-        // Se validou no validate-token, pode não ter payload de usuário
         req.user = resp.data?.data || resp.data || { tokenValid: true };
         return next();
       } catch (err) {
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          // tenta próximo formato
           continue;
         }
-        // Erro de rede: tenta próximo, mas se for o último, responde 401 genérico
         continue;
       }
     }

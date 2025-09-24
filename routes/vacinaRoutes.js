@@ -10,21 +10,19 @@ const router = express.Router();
 const ESTOQUE_MINIMO = Number(process.env.ESTOQUE_MINIMO || 5);
 const DIAS_ALERTA_VALIDADE = Number(process.env.DIAS_ALERTA_VALIDADE || 30);
 
-// Listar vacinas (público) com filtros
 router.get('/', async (req, res) => {
   try {
     const {
       tipo,
       q,
-      status_validade, // vencidos | validade_proxima | validos
-      estoque_baixo, // true
+      status_validade,
+      estoque_baixo,
       ativo
     } = req.query;
 
     const { Vacina } = getModels();
     const filter = { where: {}, order: [['nome', 'ASC']] };
 
-    // Por padrão, retorna apenas ativos
     if (typeof ativo === 'undefined') {
       filter.where.ativo = true;
     } else if (ativo === 'true' || ativo === true) {
@@ -67,7 +65,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Dashboard de alertas (protegido)
 router.get('/alertas/dashboard', authRequired, async (_req, res) => {
   try {
     const { Vacina } = getModels();
@@ -92,7 +89,6 @@ router.get('/alertas/dashboard', authRequired, async (_req, res) => {
   }
 });
 
-// Buscar por ID (protegido)
 router.get('/:id', authRequired, async (req, res) => {
   try {
     const { Vacina } = getModels();
@@ -105,7 +101,6 @@ router.get('/:id', authRequired, async (req, res) => {
   }
 });
 
-// Cadastrar (protegido)
 router.post('/', authRequired, async (req, res) => {
   try {
     const {
@@ -159,7 +154,6 @@ router.post('/', authRequired, async (req, res) => {
   }
 });
 
-// Atualizar (protegido) - apenas campos seguros
 router.put('/:id', authRequired, async (req, res) => {
   try {
     const allow = ['quantidade_estoque', 'observacoes', 'valor'];
@@ -183,7 +177,6 @@ router.put('/:id', authRequired, async (req, res) => {
   }
 });
 
-// Inativar (soft delete) - protegido
 router.delete('/:id', authRequired, async (req, res) => {
   try {
     const { Vacina } = getModels();
@@ -197,6 +190,5 @@ router.delete('/:id', authRequired, async (req, res) => {
   }
 });
 
-// moved above
 
 module.exports = router;

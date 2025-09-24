@@ -8,7 +8,6 @@ function defineModels(sequelize) {
   const Vacina = defineVacina(sequelize, DataTypes);
   const Aplicacao = defineAplicacao(sequelize, DataTypes);
 
-  // Associations
   Vacina.hasMany(Aplicacao, { foreignKey: 'vacina_id' });
   Aplicacao.belongsTo(Vacina, { foreignKey: 'vacina_id' });
 

@@ -26,12 +26,10 @@ async function getAnimalInfo(animalId, token) {
     if (err.response && err.response.status === 404) {
       return { exists: false };
     }
-    // Falha de rede ou erro inesperado: não afirmar inexistência
     return { exists: true, name: null, raw: null, uncertain: true };
   }
 }
 
-// Listar com filtros (protegido)
 router.get('/', authRequired, async (req, res) => {
   try {
     const { Aplicacao } = getModels();
@@ -53,7 +51,6 @@ router.get('/', authRequired, async (req, res) => {
   }
 });
 
-// Registrar aplicação (protegido)
 router.post('/', authRequired, async (req, res) => {
   try {
     const { animal_id, vacina_id, veterinario, quantidade, data, local, observacoes } = req.body || {};
@@ -64,7 +61,6 @@ router.post('/', authRequired, async (req, res) => {
       return sendValidationError(res, 'Quantidade deve ser maior que zero');
     }
 
-    // Validar animal via ms-prontuario
     const token = req.headers['authorization'] || req.headers['Authorization'] || '';
     const animal = await getAnimalInfo(animal_id, token);
     if (!animal.exists) {
@@ -75,7 +71,6 @@ router.post('/', authRequired, async (req, res) => {
 
     const { Vacina, Aplicacao } = getModels();
 
-    // Transação com lock para débito de estoque
     const result = await sequelize.transaction(async (t) => {
       const vacina = await Vacina.findByPk(vacina_id, { transaction: t, lock: t.LOCK.UPDATE });
       if (!vacina) return { error: 'Vacina não encontrada' };
@@ -117,7 +112,6 @@ router.post('/', authRequired, async (req, res) => {
   }
 });
 
-// Histórico do animal (protegido)
 router.get('/animal/:animal_id', authRequired, async (req, res) => {
   try {
     const { Aplicacao } = getModels();
@@ -129,7 +123,6 @@ router.get('/animal/:animal_id', authRequired, async (req, res) => {
   }
 });
 
-// Buscar por ID (protegido)
 router.get('/:id', authRequired, async (req, res) => {
   try {
     const { Aplicacao } = getModels();
