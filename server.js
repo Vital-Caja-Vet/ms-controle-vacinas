@@ -28,6 +28,36 @@ try {
 app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const PORT = process.env.PORT || 8003;
+
+// Sanity checks for MS_PRONTUARIO_URL configuration
+try {
+  const RAW_MS = process.env.MS_PRONTUARIO_URL || 'http://localhost:8001';
+  const SAN_MS = RAW_MS.replace(/\/$/, '').replace(/\/api\/v1$/, '');
+
+  if (/\/api\/v1\/?$/.test(RAW_MS)) {
+    console.warn(
+      '[WARN] MS_PRONTUARIO_URL termina com /api/v1. Use apenas a BASE (ex: http://127.0.0.1:8001). Valor atual:',
+      RAW_MS
+    );
+  }
+
+  try {
+    const u = new URL(SAN_MS);
+    const prontPort = u.port || (u.protocol === 'https:' ? '443' : '80');
+    if (String(prontPort) === String(PORT)) {
+      console.warn(
+        '[WARN] MS_PRONTUARIO_URL aponta para a mesma porta deste serviço (',
+        PORT,
+        '). Corrija para o ms-prontuario (ex: http://127.0.0.1:8001). Valor atual:',
+        SAN_MS
+      );
+    }
+  } catch (_) {
+    // ignore URL parse errors, not fatal
+  }
+} catch (_) {
+  // ignore sanity check errors, not fatal
+}
 initDb()
   .then(() => {
     const vacinaRoutes = require('./routes/vacinaRoutes');

@@ -11,7 +11,10 @@ const { sendSuccess, sendValidationError, sendNotFound, sendServerError } = requ
 const router = express.Router();
 
 const ESTOQUE_MINIMO = Number(process.env.ESTOQUE_MINIMO || 5);
-const MS_PRONTUARIO_URL = (process.env.MS_PRONTUARIO_URL || 'http://localhost:8001').replace(/\/$/, '');
+// Sanitize MS_PRONTUARIO_URL: remove trailing slash and any trailing /api/v1
+const __RAW_MS_PRONTUARIO_URL = process.env.MS_PRONTUARIO_URL || 'http://localhost:8001';
+const __BASE_MS_PRONTUARIO_URL = __RAW_MS_PRONTUARIO_URL.replace(/\/$/, '').replace(/\/api\/v1$/, '');
+const MS_PRONTUARIO_URL = __BASE_MS_PRONTUARIO_URL;
 
 async function getAnimalInfo(animalId, token) {
   const url = `${MS_PRONTUARIO_URL}/api/v1/animais/${encodeURIComponent(animalId)}`;
@@ -24,6 +27,7 @@ async function getAnimalInfo(animalId, token) {
     return { exists: true, name: data.nome || data.name || null, raw: data };
   } catch (err) {
     if (err.response && err.response.status === 404) {
+      console.warn('ProntuarioAnimalNotFound', { url, MS_PRONTUARIO_URL });
       return { exists: false };
     }
     return { exists: true, name: null, raw: null, uncertain: true };

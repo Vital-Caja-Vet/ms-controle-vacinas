@@ -156,3 +156,17 @@ Containerização
 ---------------
 - Projeto preparado para containerização (Dockerfile/compose podem ser adicionados conforme necessidade).
 
+\nNota sobre MS_PRONTUARIO_URL
+----------------------------
+- A URL deve ser apenas a base do ms-prontuário, sem `/api/v1` no final.
+- Exemplo de configuração válida:
+```
+MS_PRONTUARIO_URL=http://127.0.0.1:8001
+```
+- Dica (dev): para testes locais rápidos, defina `AUTH_BYPASS=true`.
+
+Avisos de inicialização
+-----------------------
+- Ao subir o serviço, um aviso no log será impresso se:
+  - `MS_PRONTUARIO_URL` terminar com `/api/v1` (corrija para usar apenas a base), ou
+  - `MS_PRONTUARIO_URL` apontar para a mesma porta do próprio ms de vacinas (evite apontar para si mesmo; use a porta do ms-prontuário, ex.: `8001`).
